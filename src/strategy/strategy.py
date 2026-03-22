@@ -30,7 +30,7 @@ class StrategyReport:
         """格式化为可读文本。"""
         lines = [
             f"📊 A股公告监控日报 ({self.date})",
-            f"━━━━━━━━━━━━━━━━━━━━",
+            "━━━━━━━━━━━━━━━━━━━━",
             f"扫描公告: {self.total_announcements} 条 | 有效信号: {self.total_signals} 条",
             "",
         ]

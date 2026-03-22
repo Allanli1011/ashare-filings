@@ -27,7 +27,7 @@ _HEADERS = {
 _EM_TYPE_MAP: dict[str, AnnouncementCategory] = {
     "01010503": AnnouncementCategory.EARNINGS_FORECAST,  # 业绩预告
     "01010501": AnnouncementCategory.ANNUAL_REPORT,       # 年报
-    "01010503": AnnouncementCategory.EARNINGS_EXPRESS,     # 业绩快报
+    "01010505": AnnouncementCategory.EARNINGS_EXPRESS,     # 业绩快报
     "0102": AnnouncementCategory.RESTRUCTURING,            # 重大事项
     "0108": AnnouncementCategory.DIVIDEND,                 # 分红送转
 }

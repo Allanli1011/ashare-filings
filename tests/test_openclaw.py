@@ -5,7 +5,6 @@ import os
 from pathlib import Path
 
 from src.utils.openclaw import (
-    OpenClawModelInfo,
     _resolve_env_vars,
     _strip_json5_comments,
     load_openclaw_config,

@@ -35,10 +35,12 @@ class FilterConfig(BaseModel):
 
 
 class LLMConfig(BaseModel):
-    provider: Literal["anthropic", "openai", "local"] = "anthropic"
+    provider: Literal["anthropic", "openai", "local", "openclaw"] = "anthropic"
     model: str = "claude-sonnet-4-20250514"
     api_key: str = ""
     base_url: str = ""  # OpenAI 兼容 API 地址，如 http://localhost:11434/v1
+    openclaw_config_path: str = ""  # 自定义 openclaw.json 路径，留空则用 ~/.openclaw/openclaw.json
+    openclaw_provider: str = ""  # 指定使用 openclaw 中的哪个 provider，留空则用 primary model 的 provider
     daily_budget_calls: int = 200
 
 

@@ -53,6 +53,7 @@ mode = "hybrid"
 #   "anthropic" - Anthropic Claude API
 #   "openai"    - OpenAI API 或任何 OpenAI 兼容服务
 #   "local"     - 本地部署的 OpenAI 兼容服务（Ollama、vLLM、LM Studio 等）
+#   "openclaw"  - 直接读取本地 OpenClaw 的配置，复用已有的模型设置
 provider = "anthropic"
 model = "claude-sonnet-4-20250514"
 api_key = ""  # 也可通过环境变量 ANTHROPIC_API_KEY / OPENAI_API_KEY 设置
@@ -64,7 +65,15 @@ base_url = ""
 # 每日 LLM 调用预算上限
 daily_budget_calls = 200
 
-# ---- 本地 Ollama 配置示例 ----
+# ---- 复用 OpenClaw 配置示例（推荐，零重复配置） ----
+# [analyzer.llm]
+# provider = "openclaw"
+# openclaw_config_path = ""      # 留空则默认 ~/.openclaw/openclaw.json
+# openclaw_provider = ""          # 留空则使用 primary model 的 provider
+#                                 # 也可指定: "ollama", "lmstudio", "anthropic" 等
+# daily_budget_calls = 1000
+
+# ---- 本地 Ollama 直连示例 ----
 # [analyzer.llm]
 # provider = "local"
 # model = "qwen2.5:14b"

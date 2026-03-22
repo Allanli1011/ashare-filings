@@ -40,8 +40,32 @@ class LLMEngine:
 
     def __init__(self, config: LLMConfig):
         self.config = config
+        self._openclaw_info = None
+        if config.provider == "openclaw":
+            self._openclaw_info = self._load_openclaw()
         self._call_count = 0
         self._call_date = date.today()
+
+    def _load_openclaw(self):
+        """从 OpenClaw 配置中加载模型连接信息。"""
+        from src.utils.openclaw import (
+            load_openclaw_config,
+            resolve_primary_model,
+            resolve_provider_model,
+        )
+
+        oc_config = load_openclaw_config(self.config.openclaw_config_path)
+
+        if self.config.openclaw_provider:
+            info = resolve_provider_model(oc_config, self.config.openclaw_provider)
+        else:
+            info = resolve_primary_model(oc_config)
+
+        logger.info(
+            "已加载 OpenClaw 配置: provider=%s, model=%s, api=%s, base_url=%s",
+            info.provider_name, info.model_id, info.api_type, info.base_url,
+        )
+        return info
 
     async def analyze(self, announcement: Announcement) -> Signal | None:
         """使用 LLM 深度分析公告。"""
@@ -79,11 +103,70 @@ class LLMEngine:
 
     async def _call_llm(self, user_prompt: str) -> dict:
         """调用 LLM API。"""
+        if self.config.provider == "openclaw":
+            return await self._call_via_openclaw(user_prompt)
         if self.config.provider == "anthropic":
             return await self._call_anthropic(user_prompt)
         if self.config.provider in ("openai", "local"):
             return await self._call_openai_compatible(user_prompt)
         raise ValueError(f"不支持的 LLM 提供商: {self.config.provider}")
+
+    async def _call_via_openclaw(self, user_prompt: str) -> dict:
+        """使用 OpenClaw 配置中的模型参数调用 LLM。"""
+        info = self._openclaw_info
+        if info.api_type == "anthropic-messages":
+            # Anthropic 原生接口
+            import anthropic
+
+            kwargs = {"api_key": info.api_key}
+            if info.base_url:
+                kwargs["base_url"] = info.base_url
+
+            client = anthropic.AsyncAnthropic(**kwargs)
+            message = await client.messages.create(
+                model=info.model_id,
+                max_tokens=500,
+                system=_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": user_prompt}],
+            )
+            response_text = message.content[0].text
+            return json.loads(response_text)
+        else:
+            # openai-completions / openai-responses → 走 OpenAI 兼容接口
+            import httpx
+
+            api_key = info.api_key or "no-key-required"
+            base_url = info.base_url or "http://localhost:11434/v1"
+
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            }
+            payload = {
+                "model": info.model_id,
+                "max_tokens": 500,
+                "temperature": 0.1,
+                "messages": [
+                    {"role": "system", "content": _SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt},
+                ],
+            }
+
+            async with httpx.AsyncClient(timeout=60) as client:
+                resp = await client.post(
+                    f"{base_url.rstrip('/')}/chat/completions",
+                    headers=headers,
+                    json=payload,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+
+            response_text = data["choices"][0]["message"]["content"]
+            response_text = response_text.strip()
+            if response_text.startswith("```"):
+                lines = response_text.split("\n")
+                response_text = "\n".join(lines[1:-1])
+            return json.loads(response_text)
 
     async def _call_anthropic(self, user_prompt: str) -> dict:
         """调用 Anthropic Claude API。"""

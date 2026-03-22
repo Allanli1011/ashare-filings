@@ -49,12 +49,27 @@ min_market_cap = 0
 mode = "hybrid"
 
 [analyzer.llm]
-# LLM 提供商: "anthropic", "openai", "local"
+# LLM 提供商:
+#   "anthropic" - Anthropic Claude API
+#   "openai"    - OpenAI API 或任何 OpenAI 兼容服务
+#   "local"     - 本地部署的 OpenAI 兼容服务（Ollama、vLLM、LM Studio 等）
 provider = "anthropic"
 model = "claude-sonnet-4-20250514"
-api_key = ""  # 也可通过环境变量 ANTHROPIC_API_KEY 设置
+api_key = ""  # 也可通过环境变量 ANTHROPIC_API_KEY / OPENAI_API_KEY 设置
+# OpenAI 兼容 API 地址（provider 为 openai/local 时生效）
+# Ollama:    http://localhost:11434/v1
+# vLLM:      http://localhost:8000/v1
+# LM Studio: http://localhost:1234/v1
+base_url = ""
 # 每日 LLM 调用预算上限
 daily_budget_calls = 200
+
+# ---- 本地 Ollama 配置示例 ----
+# [analyzer.llm]
+# provider = "local"
+# model = "qwen2.5:14b"
+# base_url = "http://localhost:11434/v1"
+# daily_budget_calls = 1000
 
 [strategy]
 # 策略激进程度: "conservative", "moderate", "aggressive"

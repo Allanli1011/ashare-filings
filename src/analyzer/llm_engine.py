@@ -81,20 +81,23 @@ class LLMEngine:
         """调用 LLM API。"""
         if self.config.provider == "anthropic":
             return await self._call_anthropic(user_prompt)
+        if self.config.provider in ("openai", "local"):
+            return await self._call_openai_compatible(user_prompt)
         raise ValueError(f"不支持的 LLM 提供商: {self.config.provider}")
 
     async def _call_anthropic(self, user_prompt: str) -> dict:
         """调用 Anthropic Claude API。"""
         import anthropic
 
-        api_key = self.config.api_key
-        if not api_key:
-            import os
-            api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        api_key = self._resolve_key("ANTHROPIC_API_KEY")
         if not api_key:
             raise ValueError("未配置 ANTHROPIC_API_KEY")
 
-        client = anthropic.AsyncAnthropic(api_key=api_key)
+        kwargs = {"api_key": api_key}
+        if self.config.base_url:
+            kwargs["base_url"] = self.config.base_url
+
+        client = anthropic.AsyncAnthropic(**kwargs)
 
         message = await client.messages.create(
             model=self.config.model,
@@ -105,6 +108,51 @@ class LLMEngine:
 
         response_text = message.content[0].text
         return json.loads(response_text)
+
+    async def _call_openai_compatible(self, user_prompt: str) -> dict:
+        """调用 OpenAI 兼容 API（支持 Ollama、vLLM、LM Studio 等本地服务）。"""
+        import httpx
+
+        api_key = self._resolve_key("OPENAI_API_KEY") or "no-key-required"
+        base_url = self.config.base_url or "http://localhost:11434/v1"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
+        payload = {
+            "model": self.config.model,
+            "max_tokens": 500,
+            "temperature": 0.1,
+            "messages": [
+                {"role": "system", "content": _SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+        }
+
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.post(
+                f"{base_url.rstrip('/')}/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        response_text = data["choices"][0]["message"]["content"]
+        # 兼容部分模型返回 markdown 代码块包裹的 JSON
+        response_text = response_text.strip()
+        if response_text.startswith("```"):
+            lines = response_text.split("\n")
+            response_text = "\n".join(lines[1:-1])
+        return json.loads(response_text)
+
+    def _resolve_key(self, env_var: str) -> str:
+        """解析 API key：优先使用配置值，其次环境变量。"""
+        if self.config.api_key:
+            return self.config.api_key
+        import os
+        return os.environ.get(env_var, "")
 
     @staticmethod
     def _parse_result(announcement: Announcement, result: dict) -> Signal | None:

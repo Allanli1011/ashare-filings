@@ -38,6 +38,7 @@ class LLMConfig(BaseModel):
     provider: Literal["anthropic", "openai", "local"] = "anthropic"
     model: str = "claude-sonnet-4-20250514"
     api_key: str = ""
+    base_url: str = ""  # OpenAI 兼容 API 地址，如 http://localhost:11434/v1
     daily_budget_calls: int = 200
 
 

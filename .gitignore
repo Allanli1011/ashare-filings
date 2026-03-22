@@ -1,0 +1,27 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# 配置文件（含敏感信息）
+config.toml
+
+# 数据库
+data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 系统文件
+.DS_Store
+Thumbs.db

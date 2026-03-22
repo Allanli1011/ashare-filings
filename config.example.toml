@@ -1,0 +1,79 @@
+# A股公告监控系统配置文件
+# 复制为 config.toml 并填入实际值
+
+[general]
+# 数据采集间隔（分钟），交易日盘后运行建议设为 60
+poll_interval_minutes = 30
+# 数据库路径
+db_path = "data/filings.db"
+# 日志级别: DEBUG, INFO, WARNING, ERROR
+log_level = "INFO"
+
+[sources]
+# 启用的数据源: cninfo (巨潮资讯网), eastmoney (东方财富)
+enabled = ["cninfo"]
+
+[sources.cninfo]
+# 巨潮资讯网 API（免费，无需 key）
+base_url = "http://www.cninfo.com.cn/new/disclosure"
+
+[sources.eastmoney]
+base_url = "https://np-anotice-stock.eastmoney.com/api"
+
+[filter]
+# 关注的股票代码列表（留空则监控全市场）
+watch_stocks = []
+# 关注的公告类型
+watch_categories = [
+    "业绩预告",
+    "业绩快报",
+    "年报",
+    "半年报",
+    "季报",
+    "股权激励",
+    "增持",
+    "减持",
+    "回购",
+    "重大合同",
+    "资产重组",
+    "股东大会",
+    "分红",
+    "停复牌",
+    "风险警示",
+]
+# 最低关注市值（亿元），0 表示不过滤
+min_market_cap = 0
+
+[analyzer]
+# 分析模式: "rule" (纯规则), "llm" (LLM辅助), "hybrid" (混合)
+mode = "hybrid"
+
+[analyzer.llm]
+# LLM 提供商: "anthropic", "openai", "local"
+provider = "anthropic"
+model = "claude-sonnet-4-20250514"
+api_key = ""  # 也可通过环境变量 ANTHROPIC_API_KEY 设置
+# 每日 LLM 调用预算上限
+daily_budget_calls = 200
+
+[strategy]
+# 策略激进程度: "conservative", "moderate", "aggressive"
+risk_level = "moderate"
+
+[notify]
+# 通知渠道: "wecom" (企业微信), "dingtalk" (钉钉), "email", "console"
+channels = ["console"]
+
+[notify.wecom]
+webhook_url = ""
+
+[notify.dingtalk]
+webhook_url = ""
+secret = ""
+
+[notify.email]
+smtp_host = ""
+smtp_port = 465
+username = ""
+password = ""
+recipients = []
